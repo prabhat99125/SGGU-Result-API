@@ -3,14 +3,9 @@ const app = express();
 const student = require("./DetaBase/student");
 const analisis = require("./DetaBase/analisis");
 const cors = require('cors');
+const { set } = require("mongoose");
 
-const corsOptions = {
-    origin: 'https://sggu.netlify.app/', // Allow requests from this origin
-    methods: 'GET', // Allow only GET and POST methods
-    allowedHeaders: ['Content-Type', 'Authorization'], // Allow specific headers
-    credentials: true // Allow cookies and other credentials
-};
-app.use(cors(corsOptions))
+app.use(cors())
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(async (req, res, next) => {
