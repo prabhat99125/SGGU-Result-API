@@ -61,12 +61,24 @@ app.get("/result/:College", async (req, res) => {
 });
 
 app.get("/Bcom/:id", async (req, res) => {
-    try {
-        const resposn = await student.find({ _id: req.params.id });
-        res.send(resposn);
-    } catch (error) {
-        res.send({})
+
+    const resposn = await student.find({ _id: req.params.id });
+    if (!resposn[0].count) {
+        const upDate = await student.findOneAndUpdate(
+            { _id: req.params.id },
+            { $set: { count: 1 } }, // Set `sem5` to 1 if it doesn't exist
+            { new: true }
+        );
+    } else {
+        const upDate = await student.findOneAndUpdate(
+            { _id: req.params.id },
+            { $inc: { count: 1 } }, // Increment sem5 by 1
+            { upsert: true, new: true } // Create the document if it doesn't exist, and return the updated document
+        );
+
     }
+    res.send(resposn);
+
 });
 
 // Check if the current process is the master
