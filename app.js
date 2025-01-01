@@ -38,6 +38,34 @@ app.use(express.urlencoded({ extended: false }));
 //     next();
 // });
 
+let AllStudents = []
+const cacheFuc = async () => {
+    if (nodecache.has("AllcacheStudents")) {
+        AllStudents = JSON.parse(nodecache.get("AllcacheStudents"))
+    } else {
+        const resposn = await student.find({});
+        resposn.map((val) => {
+
+            AllStudents.push(val);
+        });
+        nodecache.set("AllcacheStudents", JSON.stringify(AllStudents));
+    }
+    console.log("AllStudents");
+}
+cacheFuc();
+const GetTotal = (marks) => {
+    let total = 0;
+    if (!marks || !Array.isArray(marks.result)) {
+        // console.error("Invalid marks structure:", marks);
+        return 0.00; // Return a default value or handle it as needed
+    }
+    marks.result.forEach((val) => {
+        let { externalMarks, internalMarks } = val;
+        total += externalMarks + internalMarks;
+    });
+    return Number((total / 9).toFixed(2));
+};
+
 app.get("/", (req, res) => {
     res.render('index');
 });
@@ -76,29 +104,19 @@ app.post("/spid", async (req, res) => {
 });
 
 app.get("/result/:College", async (req, res) => {
-    let studentsList = [];
-    try {
-        if (nodecache.has("cacheStudents")) {
-            studentsList = JSON.parse(nodecache.get("cacheStudents"))
-        } else {
-            const resposn = await student.find({ College: req.params.College });
-            resposn.map((val) => {
-                let studentObj = {
-                    SeatNo: val.SeatNo,
-                    Name: val.Name,
-                    Marks: Number((Math.random() * 100).toFixed()),
-                    URL: val._id.toString()
-                };
-                studentsList.push(studentObj);
-            });
-            nodecache.set("cacheStudents", JSON.stringify(studentsList));
-        }
-        res.send(studentsList);
-    } catch (error) {
-        console.error(error);
-        res.status(500).send({ error: "An error occurred while fetching students" });
+    const findCollege = AllStudents.filter(items => String(items.College) === String(req.params.College));
+    if (!findCollege.length) {
+        return res.status(404).send({ error: "No students found for the specified college." });
     }
+    let NameAndMarks = findCollege.map(val => ({
+        SeatNo: val.SeatNo,
+        Name: val.Name,
+        Marks: GetTotal(val.sem4),
+        URL: val._id.toString(),
+    }));
+    res.send(NameAndMarks);
 });
+
 
 app.get("/Bcom/:id", async (req, res) => {
     const resposn = await student.find({ _id: req.params.id });
