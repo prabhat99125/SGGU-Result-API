@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Results</title>
+    <!-- Link to external CSS -->
+    <link rel="stylesheet" href="/styles/results.css">
+</head>
+<body>
+    <h1>Student Results - Ranked</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Name</th>
+                <th>SPDID</th>
+                <th>College</th>
+                <th>Total Marks</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% 
+            // Calculate total marks for ranking
+            const rankedStudents = studentsRes.map(student => {
+                let totalMarks = 0;
+                const semesters = ['RESULT', 'sem2', 'sem3', 'sem4'];
+                semesters.forEach(sem => {
+                    if (student[sem]?.result) {
+                        student[sem].result.forEach(sub => {
+                            totalMarks += (sub.externalMarks || 0) + (sub.internalMarks || 0);
+                        });
+                    }
+                });
+                return { ...student, totalMarks };
+            }).sort((a, b) => b.totalMarks - a.totalMarks); // Sort by total marks descending
+
+            rankedStudents.forEach((student, index) => { 
+            %>
+            <tr>
+                <td><%= index + 1 %></td>
+                <td><%= student.Name %></td>
+                <td><%= student.SPDID %></td>
+                <td><%= student.College %></td>
+                <td><%= student.totalMarks %></td>
+                <td>
+                    <a href="/student/details/<%= student.SPDID %>">View Details</a>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</body>
+</html>

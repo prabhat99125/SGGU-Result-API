@@ -12,6 +12,10 @@ const studentSchema = new mongoose.Schema({
   Medium: { type: String },
   FormNo: { type: Number },
   College: { type: String },
+  RESULT: { type: Object || Array },
+  sem2: { type: Object || Array },
+  sem3: { type: Object || Array },
+  sem4: { type: Object || Array },
   sem5: { type: Object || Array },
   count : Number,
   marks : Number
