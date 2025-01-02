@@ -46,19 +46,16 @@ const cacheFuc = async () => {
     } else {
         const resposn = await student.find({});
         resposn.map((val) => {
-
             AllStudents.push(val);
         });
-        nodecache.set("AllcacheStudents", JSON.stringify(AllStudents));
+        nodecache.set("AllcacheStudents", JSON.stringify(AllStudents), 86400);
     }
     console.log("AllStudents");
 }
-cacheFuc();
 const GetTotal = (marks) => {
     let total = 0;
     if (!marks || !Array.isArray(marks.result)) {
-        // console.error("Invalid marks structure:", marks);
-        return 0.00; // Return a default value or handle it as needed
+        return 0.00;
     }
     marks.result.forEach((val) => {
         let { externalMarks, internalMarks } = val;
@@ -106,6 +103,7 @@ app.post("/spid", async (req, res) => {
 });
 
 app.get("/result/:College", async (req, res) => {
+    await cacheFuc();
     const findCollege = AllStudents.filter(items => String(items.College) === String(req.params.College));
     if (!findCollege.length) {
         return res.status(404).send({ error: "No students found for the specified college." });
@@ -119,25 +117,47 @@ app.get("/result/:College", async (req, res) => {
     res.send(NameAndMarks);
 });
 
+// app.get("/Bcom/:id", async (req, res) => {
+//     await cacheFuc();
+//     let studetnRes = AllStudents.some(result => result._id === req.params.id);
+//     res.send(AllStudents)
+//     // console.log(AllStudents);
+//     // const resposn = await student.find({ _id: req.params.id });
+//     // if (!resposn[0].count) {
+//     //     const upDate = await student.findOneAndUpdate(
+//     //         { _id: req.params.id },
+//     //         { $set: { count: 1 } }, // Set `sem5` to 1 if it doesn't exist
+//     //         { new: true }
+//     //     );
+//     // } else {
+//     //     const upDate = await student.findOneAndUpdate(
+//     //         { _id: req.params.id },
+//     //         { $inc: { count: 1 } }, // Increment sem5 by 1
+//     //         { upsert: true, new: true } // Create the document if it doesn't exist, and return the updated document
+//     //     );
+//     // }
+//     // res.send(resposn);
+// });
 app.get("/Bcom/:id", async (req, res) => {
-    let studentsRsult = AllStudents.find(stu => stu._id === req.params.id);
-    console.log(studentsRsult);
-    const resposn = await student.find({ _id: req.params.id });
-    if (!resposn[0].count) {
-        const upDate = await student.findOneAndUpdate(
-            { _id: req.params.id },
-            { $set: { count: 1 } }, // Set `sem5` to 1 if it doesn't exist
-            { new: true }
+    try {
+        await cacheFuc(); // Ensure the cache is initialized
+
+        // Find the student with the matching _id
+        const student = AllStudents.find(
+            result => result._id === req.params.id
         );
-    } else {
-        const upDate = await student.findOneAndUpdate(
-            { _id: req.params.id },
-            { $inc: { count: 1 } }, // Increment sem5 by 1
-            { upsert: true, new: true } // Create the document if it doesn't exist, and return the updated document
-        );
+
+        if (student) {
+            res.json(student); // Send the matched student data
+        } else {
+            res.status(404).json({ message: "Student not found" }); // Send 404 if no match
+        }
+    } catch (error) {
+        console.error("Error finding student:", error);
+        res.status(500).send("Internal Server Error");
     }
-    res.send(resposn);
 });
+
 // Check if the current process is the master
 if (cluster.isMaster) {
     // Fork worker processes for each CPU core
