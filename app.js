@@ -7,7 +7,9 @@ const cluster = require('cluster');
 const os = require('os');
 const NoCache = require("node-cache");
 const { json } = require("stream/consumers");
+const { console } = require("inspector");
 const nodecache = new NoCache();
+const cache = new NodeCache({ stdTTL: 7477686400 });
 // Define the number of worker processes based on CPU cores
 const numCPUs = os.cpus().length;
 
@@ -67,6 +69,7 @@ const GetTotal = (marks) => {
 };
 
 app.get("/", (req, res) => {
+    cacheFuc();
     res.render('index');
 });
 
@@ -117,8 +120,9 @@ app.get("/result/:College", async (req, res) => {
     res.send(NameAndMarks);
 });
 
-
 app.get("/Bcom/:id", async (req, res) => {
+    let studentsRsult = AllStudents.find(stu => stu._id === req.params.id);
+    console.log(studentsRsult);
     const resposn = await student.find({ _id: req.params.id });
     if (!resposn[0].count) {
         const upDate = await student.findOneAndUpdate(
@@ -135,27 +139,6 @@ app.get("/Bcom/:id", async (req, res) => {
     }
     res.send(resposn);
 });
-
-// const parsenteg = (marks) => {
-//     let parsenteg = 0;
-//     // Check if marks[0] is an array
-//     if (Array.isArray(marks[0])) {
-//         // Process the array if it's valid
-//         marks[0].forEach((mrs) => {
-//             // console.log(mrs.sem4);  // Log each element (you can modify as needed)
-//             // Assuming you want to calculate the percentage of marks
-//             parsenteg += mrs.sem4.externalMarks + mrs.sem4.internalMarks;  // Modify if necessary
-//         });
-//         console.log(parsenteg)
-//     } else {
-//         console.error('Expected marks[0] to be an array, but found:', marks[0]);
-//     }
-
-//     // Calculate the percentage if needed, this part assumes there are 9 subjects
-//     console.log(parsenteg );  // Log or return the percentage
-//     return parsenteg;
-// };
-
 // Check if the current process is the master
 if (cluster.isMaster) {
     // Fork worker processes for each CPU core
