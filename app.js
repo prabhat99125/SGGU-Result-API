@@ -143,13 +143,13 @@ app.get("/Bcom/:id", async (req, res) => {
         await cacheFuc(); // Ensure the cache is initialized
 
         // Find the student with the matching _id
-        const student = AllStudents.find(
-            result => result._id === req.params.id
-        );
+        // const student = AllStudents.find(
+        //     result => result._id === req.params.id
+        // );
 
-        if (student) {
-            res.send(student); // Send the matched student data
-        } else {
+        // if (student) {
+        //     res.send(student); // Send the matched student data
+        // } else {
             const resposn = await student.find({ _id: req.params.id });
             if (!resposn[0].count) {
                 const upDate = await student.findOneAndUpdate(
@@ -165,7 +165,7 @@ app.get("/Bcom/:id", async (req, res) => {
                 );
             }
             res.send(resposn);
-        }
+        // }
     } catch (error) {
         console.error("Error finding student:", error);
         res.status(500).send("Internal Server Error");
