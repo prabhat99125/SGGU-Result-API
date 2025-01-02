@@ -9,7 +9,6 @@ const NoCache = require("node-cache");
 const { json } = require("stream/consumers");
 const { console } = require("inspector");
 const nodecache = new NoCache();
-const cache = new nodecache({ stdTTL: 86400  });
 // Define the number of worker processes based on CPU cores
 const numCPUs = os.cpus().length;
 
