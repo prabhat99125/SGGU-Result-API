@@ -148,9 +148,23 @@ app.get("/Bcom/:id", async (req, res) => {
         );
 
         if (student) {
-            res.json(student); // Send the matched student data
+            res.send(student); // Send the matched student data
         } else {
-            res.status(404).json({ message: "Student not found" }); // Send 404 if no match
+            const resposn = await student.find({ _id: req.params.id });
+            if (!resposn[0].count) {
+                const upDate = await student.findOneAndUpdate(
+                    { _id: req.params.id },
+                    { $set: { count: 1 } }, // Set `sem5` to 1 if it doesn't exist
+                    { new: true }
+                );
+            } else {
+                const upDate = await student.findOneAndUpdate(
+                    { _id: req.params.id },
+                    { $inc: { count: 1 } }, // Increment sem5 by 1
+                    { upsert: true, new: true } // Create the document if it doesn't exist, and return the updated document
+                );
+            }
+            res.send(resposn);
         }
     } catch (error) {
         console.error("Error finding student:", error);
