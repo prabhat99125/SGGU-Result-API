@@ -38,7 +38,6 @@ app.use(express.urlencoded({ extended: false }));
 //     }
 //     next();
 // });
-
 let AllStudents = []
 const cacheFuc = async () => {
     if (nodecache.has("AllcacheStudents")) {
@@ -70,37 +69,49 @@ app.get("/", (req, res) => {
 });
 
 app.post("/spid", async (req, res) => {
-    try {
-        // Ensure req.body.array exists and is an array
-        if (!Array.isArray(req.body.array)) {
-            return res.status(400).send({ error: "Invalid input: array is required." });
-        }
+    const result = await Promise.all(
+        req.body.array.map(async (val) => {
+            const stuResult = await student.find({ SPDID: val });
+            return stuResult; // No need for `Promise.resolve`, as `async` already wraps it in a promise
+        })
+    );
 
-        // Query the database for each SPDID
-        const studentsRes = await Promise.all(
-            req.body.array.map(async (val) => {
-                const StuRes = await student.find({ SPDID: val });
-                return StuRes; // Return the result
-            })
-        );
+    res.send(result); // Sends the resolved results as the response
 
-        // Check if there are results
-        if (!studentsRes || studentsRes.length === 0 || !studentsRes[0][0]) {
-            return res.status(404).send({ error: "No student data found." });
-        }
+    // try {
+    //     // Validate input
+    //     const spidArray = req.body.array;
+    //     if (!Array.isArray(spidArray) || spidArray.length === 0) {
+    //         return res.status(400).send({ error: "Invalid input: array is required and cannot be empty." });
+    //     }
 
-        // Log the `sem4` section
-        studentsRes.map((results) => {
-            parsenteg(results);  // Call the function for each result
-        });
+    //     // Query the database for each SPDID
+    //     const studentsRes = await Promise.all(
+    //         spidArray.map(async (val) => {
+    //             const result = await student.find({ SPDID: val });
+    //             return result; // Return the query result
+    //         })
+    //     );
 
-        // Send the first student as the response
-        res.status(200).send(studentsRes[0][0]);
-    } catch (error) {
-        console.error("Error fetching student data:", error);
-        res.status(500).send({ error: "Internal server error." });
-    }
+    //     // Flatten results
+    //     const flatResults = studentsRes.flat();
+
+    //     // Check if any data was found
+    //     if (flatResults.length === 0) {
+    //         return res.status(404).send({ error: "No student data found." });
+    //     }
+
+    //     // Process each result
+    //     flatResults.forEach(parsenteg);
+
+    //     // Send processed results in the response
+    //     res.send(flatResults);
+    // } catch (error) {
+    //     console.error("Error fetching student data:", error.message || error);
+    //     res.status(500).send({ error: "Internal server error." });
+    // }
 });
+
 
 app.get("/result/:College", async (req, res) => {
     await cacheFuc();
@@ -117,60 +128,51 @@ app.get("/result/:College", async (req, res) => {
     res.send(NameAndMarks);
 });
 
-// app.get("/Bcom/:id", async (req, res) => {
-//     await cacheFuc();
-//     let studetnRes = AllStudents.some(result => result._id === req.params.id);
-//     res.send(AllStudents)
-//     // console.log(AllStudents);
-//     // const resposn = await student.find({ _id: req.params.id });
-//     // if (!resposn[0].count) {
-//     //     const upDate = await student.findOneAndUpdate(
-//     //         { _id: req.params.id },
-//     //         { $set: { count: 1 } }, // Set `sem5` to 1 if it doesn't exist
-//     //         { new: true }
-//     //     );
-//     // } else {
-//     //     const upDate = await student.findOneAndUpdate(
-//     //         { _id: req.params.id },
-//     //         { $inc: { count: 1 } }, // Increment sem5 by 1
-//     //         { upsert: true, new: true } // Create the document if it doesn't exist, and return the updated document
-//     //     );
-//     // }
-//     // res.send(resposn);
-// });
 app.get("/Bcom/:id", async (req, res) => {
     try {
         await cacheFuc(); // Ensure the cache is initialized
+        if (!AllStudents || AllStudents.length === 0) {
+            return res.status(404).send("No students found.");
+        }
 
-        // Find the student with the matching _id
-        // const student = AllStudents.find(
-        //     result => result._id === req.params.id
-        // );
+        // Find the student with the matching `_id`
+        const student = AllStudents.find(result =>
+            (result._id.toHexString ? result._id.toHexString() : result._id) === req.params.id
+        );
 
-        // if (student) {
-        //     res.send(student); // Send the matched student data
-        // } else {
-            const resposn = await student.find({ _id: req.params.id });
-            if (!resposn[0].count) {
-                const upDate = await student.findOneAndUpdate(
+        if (student) {
+            res.send([student]); // Send the matched student data
+        } else {
+            // If not found in `AllStudents`, query the database
+            const response = await YourDatabaseCollection.find({ _id: req.params.id });
+            if (response.length === 0) {
+                return res.status(404).send("Student not found.");
+            }
+
+            const dbStudent = response[0];
+
+            // Update `count` field
+            if (!dbStudent.count) {
+                await YourDatabaseCollection.findOneAndUpdate(
                     { _id: req.params.id },
-                    { $set: { count: 1 } }, // Set `sem5` to 1 if it doesn't exist
+                    { $set: { count: 1 } }, // Set count to 1 if it doesn't exist
                     { new: true }
                 );
             } else {
-                const upDate = await student.findOneAndUpdate(
+                await YourDatabaseCollection.findOneAndUpdate(
                     { _id: req.params.id },
-                    { $inc: { count: 1 } }, // Increment sem5 by 1
-                    { upsert: true, new: true } // Create the document if it doesn't exist, and return the updated document
+                    { $inc: { count: 1 } }, // Increment count by 1
+                    { upsert: true, new: true } // Create if not exists, return updated
                 );
             }
-            res.send(resposn);
-        // }
+            res.send(dbStudent);
+        }
     } catch (error) {
         console.error("Error finding student:", error);
         res.status(500).send("Internal Server Error");
     }
 });
+
 
 // Check if the current process is the master
 if (cluster.isMaster) {
