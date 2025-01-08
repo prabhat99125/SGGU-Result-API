@@ -7,8 +7,9 @@ const cluster = require('cluster');
 const os = require('os');
 const NoCache = require("node-cache");
 const { json } = require("stream/consumers");
-const { console } = require("inspector");
+// const { console } = require("inspector");
 const nodecache = new NoCache();
+const fs = require("fs/promises");
 // Define the number of worker processes based on CPU cores
 const numCPUs = os.cpus().length;
 
@@ -40,17 +41,33 @@ app.use(express.urlencoded({ extended: false }));
 // });
 let AllStudents = []
 const cacheFuc = async () => {
-    if (nodecache.has("AllcacheStudents")) {
-        AllStudents = JSON.parse(nodecache.get("AllcacheStudents"))
-    } else {
-        const resposn = await student.find({});
-        resposn.map((val) => {
-            AllStudents.push(val);
-        });
-        nodecache.set("AllcacheStudents", JSON.stringify(AllStudents), 86400);
+    try {
+        // Check if data exists in cache
+        if (nodecache.has("AllcacheStudents")) {
+            AllStudents = nodecache.get("AllcacheStudents"); // No need to parse again
+        } else {
+            try {
+                // Attempt to read from file
+                const fileData = await fs.readFile("./StudentsData.json", "utf8");
+                const parsedData = await JSON.parse(fileData);
+                AllStudents = parsedData
+                nodecache.set("AllcacheStudents", parsedData, 86400); // Store directly as object
+            } catch (err) {
+                // If file doesn't exist or is corrupted, fetch from database
+                const response = await student.find({});
+                AllStudents = response
+
+                // Write the data to the file
+                await fs.writeFile("./StudentsData.json", JSON.stringify(AllStudents, null, 2), { encoding: "utf8" });
+                nodecache.set("AllcacheStudents", AllStudents, 86400); // Store directly as object
+            }
+        }
+        console.log("Cache updated successfully.");
+    } catch (e) {
+        console.error("Error in cacheFuc:", e);
     }
-    console.log("AllStudents");
-}
+};
+
 const GetTotal = (marks) => {
     let total = 0;
     if (!marks || !Array.isArray(marks.result)) {
@@ -64,6 +81,8 @@ const GetTotal = (marks) => {
 };
 
 app.get("/", (req, res) => {
+    fs.rm("./StudentsData.json")
+    console.log("rm file")
     cacheFuc();
     res.render('index');
 });
