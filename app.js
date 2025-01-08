@@ -7,7 +7,7 @@ const cluster = require('cluster');
 const os = require('os');
 const NoCache = require("node-cache");
 const { json } = require("stream/consumers");
-// const { console } = require("inspector");
+const { console } = require("inspector");
 const nodecache = new NoCache();
 const fs = require("fs/promises");
 // Define the number of worker processes based on CPU cores
