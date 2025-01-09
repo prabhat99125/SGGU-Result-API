@@ -141,7 +141,7 @@ app.get("/result/:College", async (req, res) => {
     let NameAndMarks = findCollege.map(val => ({
         SeatNo: val.SeatNo,
         Name: val.Name,
-        Marks: GetTotal(val.sem4),
+        Marks: GetTotal(val.sem5),
         URL: val._id.toString(),
     }));
     res.send(NameAndMarks);

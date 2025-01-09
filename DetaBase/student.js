@@ -22,7 +22,7 @@ const studentSchema = new mongoose.Schema({
 });
 
 // Create the model for Database 1
-const StudentDb1 = db1.model("Student", studentSchema, "BCOM_SEM_5_2024");
+const StudentDb1 = db1.model("bcom5", studentSchema);
 
 // Export the model for Database 1
 module.exports = StudentDb1;
